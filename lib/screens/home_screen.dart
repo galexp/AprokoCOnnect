@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'package:aproko_connect/models/photo.dart';
 import 'package:aproko_connect/models/user.dart';
 import 'package:aproko_connect/util/utility.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +14,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   Future fetchUser() async {
-    final response =
-        await http.get(Uri.parse('https://jsonplaceholder.typicode.com/users'));
+    final response = await http
+        .get(fetchUserFunc("https://jsonplaceholder.typicode.com/users"));
 
     List<User> users = [];
 
@@ -32,7 +32,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return users;
   }
-   late Future futureUser;
+
+  Future getPhotos() async {
+    final response = await http
+        .get(fetchUserFunc("https://jsonplaceholder.typicode.com/photos"));
+
+    List<Photo> photos = [];
+
+    if (response.statusCode == 200) {
+      var jsons = jsonDecode(response.body);
+
+      for (var json in jsons) {
+        photos.add(Photo.fromJson(json));
+      }
+    } else {
+      throw Exception('Failed to load user');
+    }
+
+    return photos;
+  }
+
+  late Future futureUser;
   @override
   void initState() {
     super.initState();
@@ -54,13 +74,28 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 5),
+          Container(
+            margin: const EdgeInsets.only(right: 10),
+            clipBehavior: Clip.none,
+            width: 25,
             child: IconButton(
               onPressed: () {},
-              icon: const Icon(Icons.add_box_sharp),
+              icon: const Icon(
+                Icons.add_box_sharp,
+                size: 30,
+              ),
             ),
-          )
+          ),
+          Container(
+            clipBehavior: Clip.none,
+            child: IconButton(
+              onPressed: () {},
+              icon: const Icon(
+                Icons.chat_bubble,
+                size: 30,
+              ),
+            ),
+          ),
         ],
       ),
       backgroundColor: Colors.black,
@@ -72,7 +107,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             Container(
               padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              clipBehavior: Clip.none,
               child: const TextField(
                   style: TextStyle(color: Color.fromARGB(160, 255, 255, 255)),
                   decoration: InputDecoration(
@@ -94,51 +128,83 @@ class _HomeScreenState extends State<HomeScreen> {
             const SizedBox(
               height: 20,
             ),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: textInfo("Favorites", FontWeight.w700, Colors.white),
-                )
-              ],
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.only(left: 10),
+              child: textInfo("Favorites", FontWeight.w700, Colors.white),
             ),
             const SizedBox(
               height: 20,
             ),
-            SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  Column(
-                    children: [
-                      profileImage("https://via.placeholder.com/600/92c952"),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      textInfo("Marc", FontWeight.w700, Colors.white),
-                    ],
-                  ),
-                  const SizedBox(
-                    width: 20,
-                  ),
-                  Column(
-                    children: [
-                      profileImage("https://via.placeholder.com/600/92c952"),
-                      const SizedBox(
-                        height: 5,
-                      ),
-                      textInfo("Marc", FontWeight.w700, Colors.white),
-                    ],
-                  )
-                ],
-              ),
+            Container(
+              clipBehavior: Clip.none,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
+              // width: double.infinity,
+              height: 120,
+              child: FutureBuilder(
+                  future: getPhotos(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasData) {
+                      return ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: 10,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              padding: const EdgeInsets.only(right: 10),
+                              clipBehavior: Clip.none,
+                              child: Column(
+                                children: [
+                                  profileImage(snapshot.data[index].url),
+                                  const SizedBox(
+                                    height: 5,
+                                  ),
+                                  textInfo(snapshot.data[index].id.toString(),
+                                      FontWeight.w700, Colors.white),
+                                ],
+                              ),
+                            );
+                          });
+                    } else {
+                      return loaderCircle();
+                    }
+                  }),
+
+              // SingleChildScrollView(
+              //   padding: const EdgeInsets.fromLTRB(10, 0, 10, 0),
+              //   scrollDirection: Axis.horizontal,
+              //   child: Row(
+              //     children: [
+              //       Column(
+              //         children: [
+              //           profileImage("https://picsum.photos/250?image=9"),
+              //           const SizedBox(
+              //             height: 5,
+              //           ),
+              //           textInfo("Marc", FontWeight.w700, Colors.white),
+              //         ],
+              //       ),
+              //       const SizedBox(
+              //         width: 20,
+              //       ),
+              //       Column(
+              //         children: [
+              //           profileImage("https://picsum.photos/250?image=9"),
+              //           const SizedBox(
+              //             height: 5,
+              //           ),
+              //           textInfo("Marc", FontWeight.w700, Colors.white),
+              //         ],
+              //       )
+              //     ],
+              //   ),
+              // ),
             ),
             const SizedBox(
               height: 20,
             ),
             Container(
               height: 500,
+              width: double.infinity,
               padding: const EdgeInsets.all(10),
               decoration: const BoxDecoration(
                   color: Colors.white,
@@ -152,16 +218,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       return ListView.builder(
                           itemCount: snapshot.data.length,
                           itemBuilder: (context, index) {
-                            return ListTile(
-                              title: textInfo(snapshot.data[index].name, FontWeight.w400, Colors.black),
+                            return Container(
+                              margin: const EdgeInsets.fromLTRB(0, 10, 0, 10),
+                              child: ListTile(
+                                leading: profileImage(
+                                    "https://picsum.photos/250?image=9"),
+                                title: textInfo(snapshot.data[index].name,
+                                    FontWeight.w400, Colors.black),
+                                subtitle: textInfo(
+                                    snapshot.data[index].username,
+                                    FontWeight.w400,
+                                    Colors.grey),
+                                trailing: const Icon(
+                                  Icons.circle,
+                                  size: 15,
+                                  color: Colors.green,
+                                ),
+                              ),
                             );
                           });
                     } else {
-                      return const Center(
-                        child: Text("No User found!"),
-                      );
+                      return loaderCircle();
                     }
-                   
                   }),
             )
           ],

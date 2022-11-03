@@ -20,3 +20,16 @@ Text textInfo(String text, FontWeight fontWeight, Color color) {
         fontWeight: fontWeight),
   );
 }
+
+fetchUserFunc(String url) {
+  return Uri.parse(url);
+}
+
+Container loaderCircle() {
+  return Container(
+    clipBehavior: Clip.none,
+    child: const Center(
+      child: CircularProgressIndicator(),
+    ),
+  );
+}
